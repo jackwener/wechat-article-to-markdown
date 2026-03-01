@@ -10,6 +10,12 @@ if (!url) {
     process.exit(1);
 }
 
+// #8: URL 格式校验
+if (!url.startsWith("https://mp.weixin.qq.com/")) {
+    console.error("❌ 请输入有效的微信文章 URL (https://mp.weixin.qq.com/...)");
+    process.exit(1);
+}
+
 const HEADERS = {
     "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -29,15 +35,36 @@ const IMAGE_CONCURRENCY = 5;
  * 从 HTML script 标签中提取发布时间
  */
 function extractPublishTime(html) {
+    // #4: 统一时间格式为 ISO 风格
     const m1 = html.match(/create_time\s*:\s*JsDecode\('([^']+)'\)/);
-    if (m1) return m1[1];
+    if (m1) {
+        // JsDecode 值可能是 timestamp 字符串或日期字符串
+        const val = m1[1];
+        const ts = parseInt(val, 10);
+        if (!isNaN(ts) && ts > 0) {
+            return formatTimestamp(ts);
+        }
+        return val;
+    }
 
     const m2 = html.match(/create_time\s*:\s*'(\d+)'/);
     if (m2) {
         const ts = parseInt(m2[1], 10);
-        return new Date(ts * 1000).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
+        return formatTimestamp(ts);
     }
     return "";
+}
+
+/**
+ * Unix timestamp (秒) -> "YYYY-MM-DD HH:mm:ss" (Asia/Shanghai)
+ */
+function formatTimestamp(ts) {
+    const d = new Date(ts * 1000);
+    const pad = (n) => String(n).padStart(2, "0");
+    // 使用 UTC+8 手动计算，避免 toLocaleString 格式不一致
+    const offset = 8 * 60; // Asia/Shanghai = UTC+8
+    const local = new Date(d.getTime() + offset * 60 * 1000);
+    return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())} ${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:${pad(local.getUTCSeconds())}`;
 }
 
 /**
@@ -58,7 +85,8 @@ async function downloadImage(imgUrl, imgDir, index) {
             responseType: "arraybuffer",
             timeout: 15000,
         });
-        fs.writeFileSync(filepath, resp.data);
+        // #5: 使用异步写入避免阻塞 event loop
+        await fs.promises.writeFile(filepath, resp.data);
         return filename;
     } catch (err) {
         console.warn(`  ⚠ 图片下载失败: ${err.message}`);
@@ -111,7 +139,7 @@ function extractMetadata($, html) {
 
 /**
  * 预处理正文 DOM：修复图片、处理代码块、移除噪声元素
- * 返回 { contentHtml, codeBlocks }
+ * 返回 { contentHtml, codeBlocks, imgUrls }
  */
 function processContent($, contentEl) {
     // 1) 图片: data-src -> src (微信懒加载)
@@ -121,6 +149,7 @@ function processContent($, contentEl) {
     });
 
     // 2) 代码块: 提取 code-snippet__fix 内容，替换为占位符
+    // #6: 使用不含 Markdown 特殊字符的占位符，避免 turndown 转义问题
     const codeBlocks = [];
     contentEl.find(".code-snippet__fix").each((_, el) => {
         $(el).find(".code-snippet__line-index").remove();
@@ -137,7 +166,7 @@ function processContent($, contentEl) {
             });
         if (lines.length === 0) lines.push($(el).text());
 
-        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        const placeholder = `CODEBLOCK-PLACEHOLDER-${codeBlocks.length}`;
         codeBlocks.push({ lang, code: lines.join("\n") });
         $(el).replaceWith(`<p>${placeholder}</p>`);
     });
@@ -145,7 +174,18 @@ function processContent($, contentEl) {
     // 3) 移除噪声元素
     contentEl.find("script, style, .qr_code_pc, .reward_area").remove();
 
-    return { contentHtml: contentEl.html(), codeBlocks };
+    // #7: 在 DOM 阶段直接收集图片 URL，比从 Markdown 正则提取更可靠
+    const imgUrls = [];
+    const seen = new Set();
+    contentEl.find("img[src]").each((_, img) => {
+        const src = $(img).attr("src");
+        if (src && !seen.has(src)) {
+            seen.add(src);
+            imgUrls.push(src);
+        }
+    });
+
+    return { contentHtml: contentEl.html(), codeBlocks, imgUrls };
 }
 
 /**
@@ -164,13 +204,11 @@ function convertToMarkdown(contentHtml, codeBlocks) {
 
     let md = turndown.turndown(contentHtml);
 
-    // 还原代码块占位符 (turndown 会把 __ 转义成 \_\_)
+    // #6: 还原代码块占位符 (新占位符不含 Markdown 特殊字符，无需处理转义)
     codeBlocks.forEach((block, i) => {
-        const escaped = `\\_\\_CODE\\_BLOCK\\_${i}\\_\\_`;
-        const raw = `__CODE_BLOCK_${i}__`;
+        const placeholder = `CODEBLOCK-PLACEHOLDER-${i}`;
         const fenced = `\n\`\`\`${block.lang}\n${block.code}\n\`\`\`\n`;
-        md = md.replace(escaped, fenced);
-        md = md.replace(raw, fenced);
+        md = md.replace(placeholder, fenced);
     });
 
     // 清理 &nbsp; 残留
@@ -212,7 +250,8 @@ function buildMarkdown({ title, author, publishTime, sourceUrl }, bodyMd) {
 
 async function fetchArticle(url) {
     console.log(`🔄 正在抓取: ${url}`);
-    const { data: html } = await axios.get(url, { headers: HEADERS });
+    // #9: 主请求也加上 timeout
+    const { data: html } = await axios.get(url, { headers: HEADERS, timeout: 30000 });
     const $ = cheerio.load(html);
 
     // 提取元数据
@@ -222,6 +261,8 @@ async function fetchArticle(url) {
         if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
         fs.writeFileSync(path.join(OUTPUT_DIR, "debug.html"), html);
         console.log("已保存原始 HTML 到 output/debug.html");
+        // #2: 设置非零退出码
+        process.exitCode = 1;
         return;
     }
     meta.sourceUrl = url;
@@ -230,24 +271,24 @@ async function fetchArticle(url) {
     console.log(`📅 时间: ${meta.publishTime}`);
 
     // 处理正文
-    const { contentHtml, codeBlocks } = processContent($, $("#js_content"));
+    // #7: imgUrls 现在从 DOM 阶段收集
+    const { contentHtml, codeBlocks, imgUrls } = processContent($, $("#js_content"));
     if (!contentHtml) {
         console.error("❌ 未能提取到正文内容");
+        // #2: 设置非零退出码
+        process.exitCode = 1;
         return;
     }
 
     // 转 Markdown
     let md = convertToMarkdown(contentHtml, codeBlocks);
 
-    // 收集所有图片 URL 并下载
+    // 下载图片
     const safeTitle = meta.title.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 80);
     const articleDir = path.join(OUTPUT_DIR, safeTitle);
     const imgDir = path.join(articleDir, "images");
     if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
 
-    const imgUrls = [...new Set(
-        [...md.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map((m) => m[1])
-    )];
     const urlMap = await downloadAllImages(imgUrls, imgDir);
     md = replaceImageUrls(md, urlMap);
 
@@ -260,6 +301,14 @@ async function fetchArticle(url) {
     console.log(`📊 Markdown 约 ${md.length} 字符`);
 }
 
+// #1: 区分错误类型，给出可操作提示
 fetchArticle(url).catch((err) => {
-    console.error("❌ 抓取失败:", err.message);
+    if (err.response?.status === 403 || err.response?.status === 412) {
+        console.error("❌ 微信反爬拦截，请稍后重试或更换 IP");
+    } else if (err.code === "ECONNABORTED") {
+        console.error("❌ 请求超时，请检查网络连接");
+    } else {
+        console.error("❌ 抓取失败:", err.message);
+    }
+    process.exitCode = 1;
 });
