@@ -1,4 +1,4 @@
-# wechat-article
+# wechat-article-to-markdown
 
 微信公众号文章抓取 & Markdown 转换工具。
 
