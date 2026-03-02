@@ -22,7 +22,7 @@ description: 抓取微信公众号文章并转换为 Markdown 格式，支持图
 ## 使用方法
 
 ```bash
-cd /Users/jakevin/kabi-reader/wechat-article-to-markdown
+# 先进入本 skill 的根目录
 node index.js "<微信文章URL>"
 ```
 
