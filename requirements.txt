@@ -1,0 +1,4 @@
+camoufox[geoip]
+markdownify
+beautifulsoup4
+httpx

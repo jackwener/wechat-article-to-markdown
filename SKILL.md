@@ -1,6 +1,6 @@
 ---
 name: wechat-article-to-markdown
-description: 抓取微信公众号文章并转换为 Markdown 格式，支持图片下载、代码块提取和元数据保留
+description: 抓取微信公众号文章并转换为 Markdown 格式，使用 Camoufox 反检测浏览器避免验证拦截
 ---
 
 # WeChat Article to Markdown
@@ -16,14 +16,15 @@ description: 抓取微信公众号文章并转换为 Markdown 格式，支持图
 
 ## 前置条件
 
-- Node.js 已安装
-- 依赖已安装 (`npm install`)
+- Python 3.10+ 已安装
+- 依赖已安装 (`pip install -r requirements.txt`)
+- Camoufox 浏览器已下载 (`python -m camoufox fetch`)
 
 ## 使用方法
 
 ```bash
 cd /Users/jakevin/kabi-reader/wechat-article-to-markdown
-node index.js "<微信文章URL>"
+python main.py "<微信文章URL>"
 ```
 
 **输入**: 微信公众号文章 URL (形如 `https://mp.weixin.qq.com/s/...`)
@@ -34,14 +35,14 @@ node index.js "<微信文章URL>"
 
 ## 功能特性
 
-1. **元数据提取** — 标题、公众号名称、发布时间、原文链接
-2. **图片本地化** — 微信 CDN 图片自动下载到本地 `images/` 目录，Markdown 引用本地路径
-3. **代码块处理** — 正确提取微信 `code-snippet` 代码块，识别语言标识，过滤 CSS counter 垃圾
-4. **HTML → Markdown** — 使用 turndown 转换，保留标题层级、列表、引用块、粗体等格式
-5. **并发下载** — 图片并发下载（默认 5 并发），加速处理
+1. **反检测抓取** — 使用 Camoufox (修改版 Firefox) 通过微信环境检测，避免 "环境异常" 验证
+2. **元数据提取** — 标题、公众号名称、发布时间、原文链接
+3. **图片本地化** — 微信 CDN 图片自动下载到本地 `images/` 目录，Markdown 引用本地路径
+4. **代码块处理** — 正确提取微信 `code-snippet` 代码块，识别语言标识，过滤 CSS counter 垃圾
+5. **HTML → Markdown** — 使用 markdownify 转换，保留标题层级、列表、引用块、粗体等格式
+6. **并发下载** — 图片并发下载（默认 5 并发），加速处理
 
 ## 限制
 
-- 微信有反爬机制，频繁请求可能触发验证码（返回 "环境异常"）
 - 部分文章的代码块使用图片/SVG 渲染而非文本，这些无法提取为代码
 - 需要文章的公开 URL（`mp.weixin.qq.com` 域名）
