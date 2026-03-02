@@ -17,14 +17,13 @@ description: 抓取微信公众号文章并转换为 Markdown 格式，使用 Ca
 ## 前置条件
 
 - Python 3.8+ 已安装
-- 依赖已安装 (`pip install -r requirements.txt`)
-- Camoufox 浏览器已下载 (`python -m camoufox fetch`)
+- [uv](https://docs.astral.sh/uv/) 已安装（推荐），或手动 `pip install -r requirements.txt`
 
 ## 使用方法
 
 ```bash
 cd /Users/jakevin/kabi-reader/wechat-article-to-markdown
-python main.py "<微信文章URL>"
+uv run main.py "<微信文章URL>"
 ```
 
 **输入**: 微信公众号文章 URL (形如 `https://mp.weixin.qq.com/s/...`)

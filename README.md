@@ -15,18 +15,20 @@
 
 ## 快速开始
 
+### 推荐：使用 uv（零配置）
+
 ```bash
-# 创建虚拟环境
+# 首次运行会自动安装依赖和 Camoufox 浏览器
+uv run main.py "https://mp.weixin.qq.com/s/xxxxxxxx"
+```
+
+### 手动安装
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
-
-# 安装依赖
 pip install -r requirements.txt
-
-# 下载 Camoufox 浏览器
 python -m camoufox fetch
-
-# 抓取文章
 python main.py "https://mp.weixin.qq.com/s/xxxxxxxx"
 ```
 

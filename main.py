@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+# /// script
+# requires-python = ">=3.8"
+# dependencies = [
+#     "camoufox[geoip]",
+#     "markdownify",
+#     "beautifulsoup4",
+#     "httpx",
+# ]
+# ///
+
 """
 WeChat Article to Markdown — 微信公众号文章抓取 & Markdown 转换工具
 
