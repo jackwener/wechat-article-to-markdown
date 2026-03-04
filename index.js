@@ -35,40 +35,62 @@ const IMAGE_CONCURRENCY = 5;
 // ============================================================
 
 /**
+ * 解码时间字段中常见的 HTML entities
+ */
+function decodeHtmlEntities(str) {
+    return str
+        .replace(/&#39;|&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, "&");
+}
+
+/**
+ * 解析 Unix 时间戳，支持 10 位秒级与 13 位毫秒级
+ */
+function parseUnixTimestamp(value) {
+    if (!/^\d+$/.test(value)) return null;
+    if (value.length === 10) {
+        const ts = Number(value);
+        return Number.isFinite(ts) && ts > 1000000000 ? ts : null;
+    }
+    if (value.length === 13) {
+        const ts = Math.floor(Number(value) / 1000);
+        return Number.isFinite(ts) && ts > 1000000000 ? ts : null;
+    }
+    return null;
+}
+
+/**
  * 从 HTML script 标签中提取发布时间
  */
 function extractPublishTime(html) {
+    const normalizedHtml = decodeHtmlEntities(html);
+
     // 优先匹配 create_timestamp (Unix 时间戳，更可靠)
-    const m0 = html.match(/create_timestamp\s*[:=]\s*['"]?(\d{10})['"]?/);
+    const m0 = normalizedHtml.match(/create_timestamp\s*[:=]\s*['"]?(\d{10,13})['"]?/);
     if (m0) {
-        const ts = parseInt(m0[1], 10);
-        if (ts > 1000000000) {
-            return formatTimestamp(ts);
-        }
+        const ts = parseUnixTimestamp(m0[1]);
+        if (ts) return formatTimestamp(ts);
     }
 
-    // 匹配 create_time: JsDecode('...')
-    const m1 = html.match(/create_time\s*:\s*JsDecode\('([^']+)'\)/);
+    // 匹配 create_time: JsDecode('...') / JsDecode("...")
+    const m1 = normalizedHtml.match(/create_time\s*:\s*JsDecode\(\s*(['"])(.*?)\1\s*\)/);
     if (m1) {
-        const val = m1[1];
+        const val = m1[2].trim();
         // 如果已经是日期字符串格式 (包含 - 或 /)，直接返回
-        if (/\d{4}[-/]\d{2}[-/]\d{2}/.test(val)) {
+        if (/\d{4}(?:[-/]\d{2}[-/]\d{2}|年\d{1,2}月\d{1,2}日)/.test(val)) {
             return val;
         }
         // 否则尝试解析为时间戳
-        const ts = parseInt(val, 10);
-        if (!isNaN(ts) && ts > 1000000000) {
-            return formatTimestamp(ts);
-        }
+        const ts = parseUnixTimestamp(val);
+        if (ts) return formatTimestamp(ts);
     }
 
     // 匹配 create_time: '数字'
-    const m2 = html.match(/create_time\s*:\s*['"](\d{10})['"]/);
+    const m2 = normalizedHtml.match(/create_time\s*:\s*['"](\d{10,13})['"]/);
     if (m2) {
-        const ts = parseInt(m2[1], 10);
-        if (ts > 1000000000) {
-            return formatTimestamp(ts);
-        }
+        const ts = parseUnixTimestamp(m2[1]);
+        if (ts) return formatTimestamp(ts);
     }
     return "";
 }
