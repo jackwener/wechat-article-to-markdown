@@ -6,11 +6,11 @@ metadata:
   openclaw:
     requires:
       bins:
-        - node
+        - wechat-to-md
     install:
       - kind: node
         package: "wechat-article-to-markdown"
-        bins: []
+        bins: [wechat-to-md]
     os: [macos, linux]
     homepage: https://github.com/jackwener/wechat-article-to-markdown
 tags:
@@ -32,16 +32,16 @@ tags:
 - 提取文章内容用于后续处理（如 AI 摘要、知识库导入）
 - 批量保存公众号内容
 
-## 前置条件
+## 安装
 
-- Node.js 已安装
-- 依赖已安装 (`npm install`)
+```bash
+npm install -g wechat-article-to-markdown
+```
 
 ## 使用方法
 
 ```bash
-# 先进入本 skill 的根目录
-node index.js "<微信文章URL>"
+wechat-to-md "<微信文章URL>"
 ```
 
 **输入**: 微信公众号文章 URL (形如 `https://mp.weixin.qq.com/s/...`)
@@ -57,6 +57,16 @@ node index.js "<微信文章URL>"
 3. **代码块处理** — 正确提取微信 `code-snippet` 代码块，识别语言标识，过滤 CSS counter 垃圾
 4. **HTML → Markdown** — 使用 turndown 转换，保留标题层级、列表、引用块、粗体等格式
 5. **并发下载** — 图片并发下载（默认 5 并发），加速处理
+
+## 常见用法
+
+```bash
+# 抓取单篇文章
+wechat-to-md "https://mp.weixin.qq.com/s/xxxxxxxx"
+
+# 配合 AI 使用：抓取后提取正文用于摘要
+wechat-to-md "https://mp.weixin.qq.com/s/xxxxxxxx" && cat output/*/文章标题.md
+```
 
 ## 限制
 

@@ -1,6 +1,6 @@
 # wechat-article-to-markdown
 
-微信公众号文章抓取 & Markdown 转换工具。
+微信公众号文章抓取 & Markdown 转换工具。Built for AI agents.
 
 使用 **cheerio + axios + turndown** 将微信公众号文章转换为干净的 Markdown 文件，图片自动下载到本地。
 
@@ -17,7 +17,7 @@
 ## 安装
 
 ```bash
-# 全局安装
+# npm 全局安装（推荐）
 npm install -g wechat-article-to-markdown
 
 # 或使用 npx 直接运行（无需安装）
@@ -27,14 +27,7 @@ npx wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx"
 ## 快速开始
 
 ```bash
-# 全局安装后
 wechat-to-md "https://mp.weixin.qq.com/s/xxxxxxxx"
-
-# 或从源码运行
-git clone git@github.com:jackwener/wechat-article-to-markdown.git
-cd wechat-article-to-markdown
-npm install
-node index.js "https://mp.weixin.qq.com/s/xxxxxxxx"
 ```
 
 输出目录结构：
@@ -65,6 +58,34 @@ output/
 ![](images/img_001.png)
 ```
 
+## AI 助手集成
+
+### Claude Code / Antigravity
+
+全局安装后自动可用。在 Claude Code 中直接使用：
+
+```bash
+# 安装（一次即可）
+npm install -g wechat-article-to-markdown
+
+# 在对话中直接让 AI 调用
+wechat-to-md "https://mp.weixin.qq.com/s/xxxxxxxx"
+```
+
+你可以用自然语言下达任务：
+- "把这篇微信文章转成 Markdown 保存下来"
+- "抓取这个公众号文章，提取正文用于知识库"
+
+### OpenClaw / ClawHub
+
+官方支持 [OpenClaw](https://openclaw.ai) 和 [ClawHub](https://docs.openclaw.ai/tools/clawhub) 生态。通过 ClawHub 安装：
+
+```bash
+clawhub install wechat-article-to-markdown
+```
+
+安装后即可在 OpenClaw 中直接使用。SKILL.md 同时兼容 Claude Code 和 OpenClaw 两个生态。
+
 ## 技术方案
 
 | 功能 | 方案 |
@@ -90,32 +111,6 @@ output/
 - 微信反爬机制可能导致验证码拦截（频繁请求时）
 - 部分代码块用图片/SVG 渲染，无法提取文本
 - 仅支持公开可访问的文章 URL
-
-## AI 助手集成
-
-### Claude Code / Antigravity
-
-```bash
-# 克隆到项目的 skills 目录
-mkdir -p .agents/skills
-git clone git@github.com:jackwener/wechat-article-to-markdown.git .agents/skills/wechat-article-to-markdown
-
-# 或者只复制 SKILL.md
-curl -o .agents/skills/wechat-article-to-markdown/SKILL.md \
-  https://raw.githubusercontent.com/jackwener/wechat-article-to-markdown/main/SKILL.md
-```
-
-添加后，支持 `.agents/skills/` 的 AI Agent 会自动发现并使用本工具。
-
-### OpenClaw / ClawHub
-
-官方支持 [OpenClaw](https://openclaw.ai) 和 [ClawHub](https://docs.openclaw.ai/tools/clawhub) 生态。通过 ClawHub 安装：
-
-```bash
-clawhub install wechat-article-to-markdown
-```
-
-安装后即可在 OpenClaw 中直接使用。SKILL.md 同时兼容 Claude Code 和 OpenClaw 两个生态。
 
 ## License
 
