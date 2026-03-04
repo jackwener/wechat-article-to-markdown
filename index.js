@@ -18,10 +18,13 @@ if (!url.startsWith("https://mp.weixin.qq.com/")) {
 
 const HEADERS = {
     "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 MicroMessenger/8.0.47.2540(0x28002F31) WeChat/arm64 Weixin NetType/WIFI Language/zh_CN",
     Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    Referer: "https://mp.weixin.qq.com/",
+    Connection: "keep-alive",
 };
 
 const OUTPUT_DIR = path.join(__dirname, "output");
@@ -35,22 +38,37 @@ const IMAGE_CONCURRENCY = 5;
  * 从 HTML script 标签中提取发布时间
  */
 function extractPublishTime(html) {
-    // #4: 统一时间格式为 ISO 风格
-    const m1 = html.match(/create_time\s*:\s*JsDecode\('([^']+)'\)/);
-    if (m1) {
-        // JsDecode 值可能是 timestamp 字符串或日期字符串
-        const val = m1[1];
-        const ts = parseInt(val, 10);
-        if (!isNaN(ts) && ts > 0) {
+    // 优先匹配 create_timestamp (Unix 时间戳，更可靠)
+    const m0 = html.match(/create_timestamp\s*[:=]\s*['"]?(\d{10})['"]?/);
+    if (m0) {
+        const ts = parseInt(m0[1], 10);
+        if (ts > 1000000000) {
             return formatTimestamp(ts);
         }
-        return val;
     }
 
-    const m2 = html.match(/create_time\s*:\s*'(\d+)'/);
+    // 匹配 create_time: JsDecode('...')
+    const m1 = html.match(/create_time\s*:\s*JsDecode\('([^']+)'\)/);
+    if (m1) {
+        const val = m1[1];
+        // 如果已经是日期字符串格式 (包含 - 或 /)，直接返回
+        if (/\d{4}[-/]\d{2}[-/]\d{2}/.test(val)) {
+            return val;
+        }
+        // 否则尝试解析为时间戳
+        const ts = parseInt(val, 10);
+        if (!isNaN(ts) && ts > 1000000000) {
+            return formatTimestamp(ts);
+        }
+    }
+
+    // 匹配 create_time: '数字'
+    const m2 = html.match(/create_time\s*:\s*['"](\d{10})['"]/);
     if (m2) {
         const ts = parseInt(m2[1], 10);
-        return formatTimestamp(ts);
+        if (ts > 1000000000) {
+            return formatTimestamp(ts);
+        }
     }
     return "";
 }
