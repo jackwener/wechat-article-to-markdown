@@ -1,0 +1,17 @@
+# Virtual environments
+.venv/
+venv/
+
+# Output
+output/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
