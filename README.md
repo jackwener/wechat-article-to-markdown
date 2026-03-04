@@ -4,6 +4,8 @@
 
 使用 **cheerio + axios + turndown** 将微信公众号文章转换为干净的 Markdown 文件，图片自动下载到本地。
 
+> 🔗 **同系列 AI 工具**: [bilibili-cli](https://github.com/jackwener/bilibili-cli) — B站命令行工具，支持视频信息、字幕、搜索、互动，同样为 AI Agent 设计。
+
 ## 功能
 
 - 📄 **文章抓取** — 输入 URL，输出结构化 Markdown
@@ -75,6 +77,32 @@ output/
 - 微信反爬机制可能导致验证码拦截（频繁请求时）
 - 部分代码块用图片/SVG 渲染，无法提取文本
 - 仅支持公开可访问的文章 URL
+
+## AI 助手集成
+
+### Claude Code / Antigravity
+
+```bash
+# 克隆到项目的 skills 目录
+mkdir -p .agents/skills
+git clone git@github.com:jackwener/wechat-article-to-markdown.git .agents/skills/wechat-article-to-markdown
+
+# 或者只复制 SKILL.md
+curl -o .agents/skills/wechat-article-to-markdown/SKILL.md \
+  https://raw.githubusercontent.com/jackwener/wechat-article-to-markdown/main/SKILL.md
+```
+
+添加后，支持 `.agents/skills/` 的 AI Agent 会自动发现并使用本工具。
+
+### OpenClaw / ClawHub
+
+官方支持 [OpenClaw](https://openclaw.ai) 和 [ClawHub](https://docs.openclaw.ai/tools/clawhub) 生态。通过 ClawHub 安装：
+
+```bash
+clawhub install wechat-article-to-markdown
+```
+
+安装后即可在 OpenClaw 中直接使用。SKILL.md 同时兼容 Claude Code 和 OpenClaw 两个生态。
 
 ## License
 

@@ -1,6 +1,24 @@
 ---
 name: wechat-article-to-markdown
 description: 抓取微信公众号文章并转换为 Markdown 格式，支持图片下载、代码块提取和元数据保留
+version: 1.0.0
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - node
+    install:
+      - kind: node
+        package: "wechat-article-to-markdown"
+        bins: []
+    os: [macos, linux]
+    homepage: https://github.com/jackwener/wechat-article-to-markdown
+tags:
+  - wechat
+  - weixin
+  - markdown
+  - content-extraction
+  - scraper
 ---
 
 # WeChat Article to Markdown
