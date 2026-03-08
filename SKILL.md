@@ -1,10 +1,14 @@
 ---
 name: wechat-article-to-markdown
-description: Fetch WeChat Official Account articles and convert to Markdown with Camoufox anti-detection browser
+description: Fetch WeChat Official Account (微信公众号) articles from mp.weixin.qq.com and convert to Markdown. 微信文章转 Markdown 工具。
 author: jackwener
 version: "1.0.0"
 tags:
   - wechat
+  - 微信
+  - 微信文章
+  - 公众号
+  - mp.weixin.qq.com
   - markdown
   - article
   - converter
