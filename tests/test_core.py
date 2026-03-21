@@ -1,12 +1,71 @@
+import pytest
 from bs4 import BeautifulSoup
 
 from wechat_article_to_markdown import (
     convert_to_markdown,
     extract_publish_time,
     format_timestamp,
+    normalize_wechat_url,
     process_content,
     replace_image_urls,
 )
+
+
+# ------------------------------------------------------------------
+# normalize_wechat_url
+# ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        # Clean URL – no change
+        (
+            "https://mp.weixin.qq.com/s?__biz=ABC&mid=123&idx=1&sn=xyz",
+            "https://mp.weixin.qq.com/s?__biz=ABC&mid=123&idx=1&sn=xyz",
+        ),
+        # Backslash-escaped separators (zsh url-quote-magic)
+        (
+            r"https://mp.weixin.qq.com/s\?__biz=ABC\&mid=123",
+            "https://mp.weixin.qq.com/s?__biz=ABC&mid=123",
+        ),
+        # HTML entity &amp;
+        (
+            "https://mp.weixin.qq.com/s?__biz=ABC&amp;mid=123",
+            "https://mp.weixin.qq.com/s?__biz=ABC&mid=123",
+        ),
+        # Wrapped in double quotes
+        (
+            '"https://mp.weixin.qq.com/s?a=1"',
+            "https://mp.weixin.qq.com/s?a=1",
+        ),
+        # Wrapped in angle brackets
+        (
+            "<https://mp.weixin.qq.com/s?a=1>",
+            "https://mp.weixin.qq.com/s?a=1",
+        ),
+        # http → https
+        (
+            "http://mp.weixin.qq.com/s?a=1",
+            "https://mp.weixin.qq.com/s?a=1",
+        ),
+        # Bare hostname (no scheme)
+        (
+            "mp.weixin.qq.com/s?a=1",
+            "https://mp.weixin.qq.com/s?a=1",
+        ),
+        # // prefix
+        (
+            "//mp.weixin.qq.com/s?a=1",
+            "https://mp.weixin.qq.com/s?a=1",
+        ),
+        # Empty / None
+        ("", ""),
+        ("  ", ""),
+    ],
+)
+def test_normalize_wechat_url(raw: str, expected: str) -> None:
+    assert normalize_wechat_url(raw) == expected
 
 
 def test_extract_publish_time_supports_multiple_patterns() -> None:
