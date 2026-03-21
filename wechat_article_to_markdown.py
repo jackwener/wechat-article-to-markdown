@@ -302,12 +302,12 @@ async def fetch_article(url: str, output_dir: Path | None = None) -> None:
     # 提取元数据
     meta = extract_metadata(soup, html)
     if not meta["title"]:
-        print("❌ 未能提取到文章标题，可能触发了验证码")
         output_dir.mkdir(parents=True, exist_ok=True)
         debug_path = output_dir / "debug.html"
         debug_path.write_text(html, encoding="utf-8")
-        print(f"已保存原始 HTML 到 {debug_path}")
-        sys.exit(1)
+        raise RuntimeError(
+            f"未能提取到文章标题，可能触发了验证码。已保存原始 HTML 到 {debug_path}"
+        )
 
     meta["source_url"] = url
     print(f"📄 标题: {meta['title']}")
@@ -317,8 +317,7 @@ async def fetch_article(url: str, output_dir: Path | None = None) -> None:
     # 处理正文
     content_html, code_blocks, img_urls = process_content(soup)
     if not content_html:
-        print("❌ 未能提取到正文内容")
-        sys.exit(1)
+        raise RuntimeError("未能提取到正文内容")
 
     # 转 Markdown
     md = convert_to_markdown(content_html, code_blocks)
