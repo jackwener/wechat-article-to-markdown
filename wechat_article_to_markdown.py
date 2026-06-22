@@ -308,13 +308,18 @@ def build_markdown(meta: dict, body_md: str) -> str:
 # ============================================================
 
 
-async def fetch_article(url: str, output_dir: Path | None = None) -> None:
+async def fetch_article(
+    url: str,
+    output_dir: Path | None = None,
+    timeout_ms: int = 30000,
+) -> None:
     """
     抓取微信公众号文章并转换为 Markdown。
 
     Args:
         url: 微信文章 URL
         output_dir: 输出目录，默认为 DEFAULT_OUTPUT_DIR
+        timeout_ms: 页面导航超时时间，单位毫秒
     """
     if output_dir is None:
         output_dir = DEFAULT_OUTPUT_DIR
@@ -325,7 +330,7 @@ async def fetch_article(url: str, output_dir: Path | None = None) -> None:
     print("🦊 启动 Camoufox 浏览器...")
     async with AsyncCamoufox(headless=True) as browser:
         page = await browser.new_page()
-        await page.goto(url, wait_until="domcontentloaded")
+        await page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
         # 等待正文加载
         try:
             await page.wait_for_selector("#js_content", timeout=10000)
@@ -392,6 +397,12 @@ def main():
         default=DEFAULT_OUTPUT_DIR,
         help=f"输出目录 (默认: {DEFAULT_OUTPUT_DIR})",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="页面导航超时时间，单位秒 (默认: 30)",
+    )
 
     args = parser.parse_args()
     raw_url = args.url
@@ -405,7 +416,9 @@ def main():
         sys.exit(1)
 
     try:
-        asyncio.run(fetch_article(url, output_dir=args.output))
+        asyncio.run(
+            fetch_article(url, output_dir=args.output, timeout_ms=args.timeout * 1000)
+        )
     except Exception as e:
         print(f"❌ 抓取失败: {e}")
         sys.exit(1)

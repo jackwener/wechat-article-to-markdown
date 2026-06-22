@@ -40,6 +40,9 @@ uv tool install wechat-article-to-markdown
 
 ```bash
 wechat-article-to-markdown "<WECHAT_ARTICLE_URL>"
+
+# If WeChat article navigation is slow, increase timeout in seconds
+wechat-article-to-markdown "<WECHAT_ARTICLE_URL>" --timeout 120
 ```
 
 Input URL format:

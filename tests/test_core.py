@@ -1,9 +1,13 @@
+import asyncio
+
 import pytest
 from bs4 import BeautifulSoup
 
+import wechat_article_to_markdown as watm
 from wechat_article_to_markdown import (
     convert_to_markdown,
     extract_publish_time,
+    fetch_article,
     format_timestamp,
     normalize_wechat_url,
     process_content,
@@ -121,3 +125,62 @@ def test_convert_to_markdown_restores_code_block() -> None:
     assert "```python" in md
     assert "print(1)" in md
     assert "CODEBLOCK-PLACEHOLDER-0" not in md
+
+
+def test_fetch_article_passes_navigation_timeout(monkeypatch, tmp_path) -> None:
+    captured = {}
+
+    class FakePage:
+        async def goto(self, url, wait_until, timeout):
+            captured["url"] = url
+            captured["wait_until"] = wait_until
+            captured["timeout"] = timeout
+
+        async def wait_for_selector(self, selector, timeout):
+            captured["selector"] = selector
+            captured["selector_timeout"] = timeout
+
+        async def content(self):
+            return """
+            <html>
+              <h1 id="activity-name">Test Article</h1>
+              <a id="js_name">Test Account</a>
+              <div id="js_content"><p>Hello</p></div>
+            </html>
+            """
+
+    class FakeBrowser:
+        async def new_page(self):
+            return FakePage()
+
+    class FakeCamoufox:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return FakeBrowser()
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    async def fake_download_all_images(img_urls, img_dir):
+        return {}
+
+    monkeypatch.setattr(watm, "AsyncCamoufox", FakeCamoufox)
+    monkeypatch.setattr(watm, "download_all_images", fake_download_all_images)
+
+    asyncio.run(
+        fetch_article(
+            "https://mp.weixin.qq.com/s/test",
+            output_dir=tmp_path,
+            timeout_ms=120000,
+        )
+    )
+
+    assert captured == {
+        "url": "https://mp.weixin.qq.com/s/test",
+        "wait_until": "domcontentloaded",
+        "timeout": 120000,
+        "selector": "#js_content",
+        "selector_timeout": 10000,
+    }
