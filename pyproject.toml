@@ -16,7 +16,7 @@ dependencies = [
   "camoufox[geoip]",
   "markdownify",
   "beautifulsoup4",
-  "httpx",
+  "httpx[socks]",
 ]
 keywords = ["wechat", "markdown", "crawler", "camoufox"]
 classifiers = [

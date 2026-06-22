@@ -36,6 +36,9 @@ uv sync
 # Installed CLI
 wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx"
 
+# Increase navigation timeout for slow WeChat article loads
+wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx" --timeout 120
+
 # Run in repo with uv
 uv run wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx"
 
@@ -141,6 +144,9 @@ pipx install wechat-article-to-markdown
 
 ```bash
 wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx"
+
+# 如遇页面加载较慢，可调大导航超时时间（单位秒）
+wechat-article-to-markdown "https://mp.weixin.qq.com/s/xxxxxxxx" --timeout 120
 ```
 
 ## 作为 AI Agent Skill 使用
