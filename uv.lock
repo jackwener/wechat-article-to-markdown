@@ -3232,6 +3232,8 @@ dependencies = [
     { name = "camoufox", extra = ["geoip"] },
     { name = "httpx" },
     { name = "markdownify" },
+    { name = "playwright", version = "1.48.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "playwright", version = "1.58.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 
 [package.metadata]
@@ -3240,6 +3242,7 @@ requires-dist = [
     { name = "camoufox", extras = ["geoip"] },
     { name = "httpx" },
     { name = "markdownify" },
+    { name = "playwright", specifier = "<1.61" },
 ]
 
 [[package]]

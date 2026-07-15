@@ -4,6 +4,7 @@ from __future__ import annotations
 # requires-python = ">=3.8"
 # dependencies = [
 #     "camoufox[geoip]",
+#     "playwright<1.61",
 #     "markdownify",
 #     "beautifulsoup4",
 #     "httpx",
