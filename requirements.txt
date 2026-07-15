@@ -1,4 +1,5 @@
 camoufox[geoip]
+playwright<1.61
 markdownify
 beautifulsoup4
 httpx
