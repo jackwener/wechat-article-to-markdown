@@ -194,6 +194,17 @@ def extract_metadata(soup: BeautifulSoup, html: str) -> dict:
     }
 
 
+def code_placeholder(index: int) -> str:
+    """
+    代码块在 Markdown 转换期间的占位符。
+
+    结尾的 -END 分隔符不可省略：没有它，CODEBLOCK-PLACEHOLDER-1 就是
+    CODEBLOCK-PLACEHOLDER-10 的前缀，convert_to_markdown() 里升序执行的
+    str.replace() 在替换第 1 块时会把第 10~19 块的占位符前缀一并吃掉。
+    """
+    return f"CODEBLOCK-PLACEHOLDER-{index}-END"
+
+
 def process_content(soup: BeautifulSoup) -> tuple[str, list[dict], list[str]]:
     """
     预处理正文 DOM：修复图片、处理代码块、移除噪声元素。
@@ -230,7 +241,7 @@ def process_content(soup: BeautifulSoup) -> tuple[str, list[dict], list[str]]:
         if not lines:
             lines.append(el.get_text())
 
-        placeholder = f"CODEBLOCK-PLACEHOLDER-{len(code_blocks)}"
+        placeholder = code_placeholder(len(code_blocks))
         code_blocks.append({"lang": lang, "code": "\n".join(lines)})
         el.replace_with(soup.new_tag("p", string=placeholder))
 
@@ -238,6 +249,13 @@ def process_content(soup: BeautifulSoup) -> tuple[str, list[dict], list[str]]:
     for sel in ("script", "style", ".qr_code_pc", ".reward_area"):
         for tag in content_el.select(sel):
             tag.decompose()
+
+    # 3b) 移除空 <pre>：微信会在正文里注入 <pre class="js_darkmode__N">
+    #     作为暗色模式的样式载体，它们不含任何文本，也不在 code-snippet__fix
+    #     内，若留到 markdownify 会被逐个转成空的围栏代码块。
+    for pre in content_el.find_all("pre"):
+        if not pre.get_text().strip():
+            pre.decompose()
 
     # 4) 收集图片 URL（去重）
     img_urls = []
@@ -265,7 +283,7 @@ def convert_to_markdown(content_html: str, code_blocks: list[dict]) -> str:
 
     # 还原代码块占位符
     for i, block in enumerate(code_blocks):
-        placeholder = f"CODEBLOCK-PLACEHOLDER-{i}"
+        placeholder = code_placeholder(i)
         fenced = f"\n```{block['lang']}\n{block['code']}\n```\n"
         md = md.replace(placeholder, fenced)
 

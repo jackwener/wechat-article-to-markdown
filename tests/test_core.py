@@ -1,7 +1,10 @@
+import re
+
 import pytest
 from bs4 import BeautifulSoup
 
 from wechat_article_to_markdown import (
+    code_placeholder,
     convert_to_markdown,
     extract_publish_time,
     format_timestamp,
@@ -115,9 +118,50 @@ def test_process_content_extracts_code_and_images() -> None:
 
 
 def test_convert_to_markdown_restores_code_block() -> None:
-    html = "<p>before</p><p>CODEBLOCK-PLACEHOLDER-0</p><p>after</p>"
+    html = f"<p>before</p><p>{code_placeholder(0)}</p><p>after</p>"
     md = convert_to_markdown(html, [{"lang": "python", "code": "print(1)"}])
 
     assert "```python" in md
     assert "print(1)" in md
-    assert "CODEBLOCK-PLACEHOLDER-0" not in md
+    assert "CODEBLOCK-PLACEHOLDER" not in md
+
+
+def test_convert_to_markdown_restores_more_than_ten_blocks() -> None:
+    # 占位符 -1 曾是 -10..-19 的前缀，升序 str.replace() 会在替换第 1 块时
+    # 吃掉后者的前缀，只留下末位数字。11 块以上才能暴露这个问题。
+    blocks = [{"lang": "python", "code": f"print({i})"} for i in range(23)]
+    html = "".join(f"<p>{code_placeholder(i)}</p>" for i in range(len(blocks)))
+
+    md = convert_to_markdown(html, blocks)
+
+    assert "CODEBLOCK-PLACEHOLDER" not in md
+    for i in range(len(blocks)):
+        assert f"print({i})" in md
+    # 每块恰好还原一次，没有被别的块覆盖
+    assert md.count("```python") == len(blocks)
+    # 没有替换后残留的裸数字行
+    assert not re.search(r"^\d+$", md, re.MULTILINE)
+
+
+def test_process_content_drops_empty_darkmode_pre() -> None:
+    # 微信注入的 <pre class="js_darkmode__N"> 不含文本、也不在
+    # code-snippet__fix 内，若不清理会被转成空的围栏代码块。
+    html = """
+    <div id="js_content">
+      <div class="code-snippet__fix">
+        <pre data-lang="python"></pre>
+        <code>print('hello')</code>
+      </div>
+      <section><pre class="js_darkmode__7"></pre></section>
+      <p>tail</p>
+    </div>
+    """
+    soup = BeautifulSoup(html, "html.parser")
+
+    content_html, code_blocks, _ = process_content(soup)
+    md = convert_to_markdown(content_html, code_blocks)
+
+    assert "js_darkmode" not in content_html
+    # 只有真实代码块的那一对围栏
+    assert md.count("```") == 2
+    assert "print('hello')" in md
